@@ -1,0 +1,69 @@
+buildscript {
+   repositories {
+      mavenCentral()
+      jcenter()
+   }
+   dependencies {
+      classpath "org.jboss.arquillian.gradle:arquillian-gradle-plugin:0.1"
+      classpath "org.apache.commons:commons-dbcp2:2.0.1"
+      classpath "org.hsqldb:hsqldb:2.3.2"
+   }
+}
+
+apply plugin: 'war'
+apply plugin: 'arquillian'
+
+dependencies {
+   // some common dependencies are configured in the root build.gradle
+    
+   providedCompile("commons-logging:commons-logging:")
+   providedCompile("javax.servlet:javax.servlet-api:")
+
+   compile("javax.inject:javax.inject:")
+   compile("org.springframework:spring-webmvc:")
+   compile("org.springframework:spring-tx:")
+   compile("org.springframework:spring-orm:")
+   compile("org.springframework.security:spring-security-web:")
+   compile("org.springframework.security:spring-security-config:")
+   compile("org.eclipse.persistence:org.eclipse.persistence.jpa:")
+    
+   runtime("org.slf4j:jcl-over-slf4j:")
+   runtime("org.apache.bval:bval-jsr303:")
+   runtime("org.aspectj:aspectjweaver:")
+   runtime("com.fasterxml.jackson.core:jackson-databind:")
+
+   testCompile("junit:junit:")
+   testCompile("org.springframework:spring-test:")
+   testCompile("org.hsqldb:hsqldb:")
+   testCompile("org.mockito:mockito-core:")
+}
+
+war {
+   from 'WebContent'
+   webInf { from 'WEB-INF' } // adds a file-set to the WEB-INF dir.
+   metaInf { from 'META-INF' } // adds a file-set to the META-INF dir.
+}
+
+
+
+// local jetty run
+
+arquillian {
+   debug = true
+
+   containers {
+      jetty {
+         version = '8'
+         type = 'embedded'
+         config = ['bindHttpPort': 8080, 'bindAddress': '127.0.0.1', 'jettyPlus': true]
+
+         dependencies {
+            adapter 'org.jboss.arquillian.container:arquillian-jetty-embedded-7:1.0.0.CR2'
+            container 'org.eclipse.jetty:jetty-webapp:8.1.11.v20130520'
+            container group: 'org.eclipse.jetty', name: 'jetty-plus', version: '8.1.11.v20130520'
+         }
+      }
+   }
+}
+
+run.dependsOn "arquillianRunJetty"

@@ -1,0 +1,74 @@
+subprojects {
+   apply plugin: 'java'
+
+   tasks.withType(JavaCompile) {
+      options.incremental = true
+   }
+
+   repositories {
+      mavenCentral()
+      flatDir { dirs '../lib' }
+   }
+
+   dependencies {
+      compile("org.slf4j:slf4j-api:")
+      compile("org.eclipse.persistence:javax.persistence:")
+      compile("org.eclipse.persistence:org.eclipse.persistence.jpa:")
+      compile("javax.validation:validation-api:1.0.0.GA")
+      compile("org.springframework.security:spring-security-core:")
+
+      runtime("ch.qos.logback:logback-classic:1.1.2")
+   }
+
+   configurations.all {
+      resolutionStrategy.eachDependency { DependencyResolveDetails details ->
+         if (details.requested.group == 'org.hsqldb') {
+            details.useVersion '2.3.2'
+         } else if (details.requested.group == 'org.slf4j') {
+            details.useVersion '1.7.7'
+         } else if (details.requested.group == 'commons-logging') {
+            details.useVersion '1.1.3'
+         } else if (details.requested.group == 'javax.inject') {
+            details.useVersion '1'
+         } else if (details.requested.group == 'org.springframework') {
+            details.useVersion '4.1.0.RELEASE'
+         } else if (details.requested.group == 'org.springframework.security') {
+            details.useVersion '3.2.5.RELEASE'
+         } else if (details.requested.group == 'org.apache.bval') {
+            details.useVersion '0.5'
+         } else if (details.requested.group == 'org.aspectj') {
+            details.useVersion '1.8.2'
+         } else if (details.requested.group == 'junit') {
+            details.useVersion '4.11'
+         } else if (details.requested.group == 'javax.servlet') {
+            details.useVersion '3.0.1'
+         } else if (details.requested.name == 'javax.persistence') {
+            details.useVersion '2.1.0'
+         } else if (details.requested.group == 'org.eclipse.persistence') {
+            details.useVersion '2.5.2'
+         } else if (details.requested.group == 'org.mockito') {
+            details.useVersion '1.9.5'
+         } else if (details.requested.group == 'com.fasterxml.jackson.core') {
+            details.useVersion '2.4.2'
+         }
+      }
+   }
+
+   // alias for arquillianRunJetty
+   task run
+}
+
+project(':angularjs-test-webapp') {
+   dependencies {
+      compile project(path: ':angularjs-test-model', configuration: 'woven')
+   }
+}
+
+
+
+
+// Gradle wrapper task
+// Only used when in need to reinstall the wrapper
+task wrapper(type: Wrapper) {
+   gradleVersion = '2.1'
+}

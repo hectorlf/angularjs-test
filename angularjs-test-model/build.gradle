@@ -1,0 +1,77 @@
+buildscript {
+   repositories {
+      mavenCentral()
+   }
+   dependencies {
+      classpath "org.eclipse.persistence:javax.persistence:2.1.0"
+      classpath "org.eclipse.persistence:org.eclipse.persistence.jpa:2.5.2"
+      classpath "org.springframework.security:spring-security-core:3.2.5.RELEASE"
+   }
+}
+
+
+dependencies {
+   // some common dependencies are configured in the root build.gradle
+}
+
+
+
+// jpa static weaving
+
+configurations {
+   woven
+}
+
+task eclipselinkWeaver(dependsOn: [compileJava,processResources]) {
+   ext.classesDir = compileJava.destinationDir
+   ext.persistenceXmlDir = processResources.destinationDir
+   ext.outputDir = new File(buildDir, 'woven-classes')
+   inputs.files fileTree(classesDir),fileTree(persistenceXmlDir)
+   outputs.dir outputDir
+}
+eclipselinkWeaver << {
+   def weaver = new org.eclipse.persistence.tools.weaving.jpa.StaticWeaveProcessor(classesDir, outputDir)
+   weaver.setPersistenceInfo(persistenceXmlDir)
+   weaver.setLogLevel(org.eclipse.persistence.logging.SessionLog.WARNING)
+   weaver.performWeaving()
+}
+classes.dependsOn eclipselinkWeaver
+
+task wovenJar(type: Jar) {
+   baseName = archivesBaseName + '-woven'
+   dependsOn classes
+   from eclipselinkWeaver.outputDir,eclipselinkWeaver.persistenceXmlDir
+}
+
+artifacts {
+   woven wovenJar
+}
+
+
+
+// metamodel generation
+
+configurations {
+   metamodel
+}
+
+dependencies {
+   metamodel("org.eclipse.persistence:javax.persistence:")
+   metamodel("org.eclipse.persistence:org.eclipse.persistence.jpa:")
+   metamodel("org.eclipse.persistence:org.eclipse.persistence.jpa.modelgen.processor:")
+   metamodel("org.springframework.security:spring-security-core:")
+}
+
+def metamodelDestDir = projectDir.absolutePath + '/src/main/java'
+
+task deleteMetamodel(type: Delete) {
+   delete files(fileTree(metamodelDestDir) { include '**/*_.java' }) 
+}
+
+task generateMetamodel(type: JavaCompile, dependsOn: deleteMetamodel) {
+   classpath = configurations.metamodel.incoming.files
+   source compileJava.source
+   destinationDir = file(metamodelDestDir)
+   options.compilerArgs << '-proc:only'
+   options.compilerArgs << '-Aeclipselink.persistencexml=' + projectDir.absolutePath + '/src/main/resources/META-INF/persistence.xml'
+}
